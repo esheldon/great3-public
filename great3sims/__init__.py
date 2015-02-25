@@ -182,7 +182,7 @@ def run(root, experiments=None, obs_type=None, shear_type=None, seed=10, steps=N
         for experiment, obs_type, shear_type, builder in branches:
             print "Generating catalogs for %s / %s / %s" % (experiment, obs_type, shear_type)
             for subfield_index in xrange(subfield_min, subfield_max+1):
-                sys.stdout.write('\r')
+                sys.stdout.write('\n')
                 sys.stdout.write("  subfield %d" % subfield_index)
                 sys.stdout.flush()
                 builder.writeSubfieldCatalog(subfield_index)
@@ -201,7 +201,7 @@ def run(root, experiments=None, obs_type=None, shear_type=None, seed=10, steps=N
             print "Generating galaxy images for %s / %s / %s" % (experiment, obs_type, shear_type)
             for subfield_index in xrange(subfield_min, subfield_max+1):
                 for epoch_index in xrange(builder.n_epochs):
-                    sys.stdout.write('\r')
+                    sys.stdout.write('\n')
                     sys.stdout.write("  subfield %d / epoch %d" % (subfield_index, epoch_index))
                     sys.stdout.flush()
                     builder.writeGalImage(subfield_index, epoch_index)
@@ -214,7 +214,7 @@ def run(root, experiments=None, obs_type=None, shear_type=None, seed=10, steps=N
             print "Generating PSF images for %s / %s / %s" % (experiment, obs_type, shear_type)
             for subfield_index in xrange(subfield_min, subfield_max+1):
                 for epoch_index in xrange(builder.n_epochs):
-                    sys.stdout.write('\r')
+                    sys.stdout.write('\n')
                     sys.stdout.write("  subfield %d / epoch %d" % (subfield_index, epoch_index))
                     sys.stdout.flush()
                     builder.writePSFImage(subfield_index, epoch_index)
@@ -225,7 +225,7 @@ def run(root, experiments=None, obs_type=None, shear_type=None, seed=10, steps=N
             print "Measuring star parameters for %s / %s / %s" % (experiment, obs_type, shear_type)
             for subfield_index in xrange(subfield_min, subfield_max+1):
                 for epoch_index in xrange(builder.n_epochs):
-                    sys.stdout.write('\r')
+                    sys.stdout.write('\n')
                     sys.stdout.write("  subfield %d / epoch %d" % (subfield_index, epoch_index))
                     sys.stdout.flush()
                     builder.writeStarParameters(subfield_index, epoch_index)
