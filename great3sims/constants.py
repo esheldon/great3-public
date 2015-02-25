@@ -78,6 +78,7 @@ epoch_shift_max = 1.0
 n_epochs = 6
 
 # Pixel scale, in arcsec.
+# ESS: use ~DES pixel scale 0.27
 pixel_scale = {
     "space": { # index second level of dictionary based on bool multiepoch
         True: 0.10, # not Nyquist sampled when there are multiple epochs
@@ -88,8 +89,8 @@ pixel_scale = {
     # possibility of having different pixel scales in the two cases if
     # we decide it is necessary later on.
     "ground": {
-        True: 0.2,
-        False: 0.2,
+        True: 0.27,
+        False: 0.27,
         },
     }
 
@@ -125,7 +126,9 @@ deep_frac = 0.025
 # creating the deep fields.  This comes from the idea that the depth is supposed to differ by ~1
 # mag, which would mean increasing fluxes by 4 or keeping fluxes fixed while lowering the noise by
 # 1/4 (or noise variance by 1/4^2).
-deep_variance_mult = 0.0625
+#deep_variance_mult = 0.0625
+# (1/16.)**2
+deep_variance_mult = 0.00390625
 
 # For the variable PSF case, set a stellar density and number of stars per image.
 min_star_density = 1. # per arcmin^2
