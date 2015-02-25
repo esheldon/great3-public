@@ -198,10 +198,17 @@ class ConstPSFBuilder(PSFBuilder):
     # PSF model across the FOV and including defocus / tilt / etc., it seems that variation in
     # defocus is more important than the other aberrations, so we give defocus a substantially
     # higher weight and treat the others equally.
+
+    # ESS: making the defocus less, don't know if this is any good
+    #aber_weights = {
+    #    "space" : np.ones(n_aber),
+    #    "ground" : np.array((0.36, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07))
+    #    }
     aber_weights = {
         "space" : np.ones(n_aber),
-        "ground" : np.array((0.36, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07))
+        "ground" : np.array((0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07))
         }
+
     opt_schema_pref = "opt_psf_"
 
     # Struts: we choose an integer number of struts from the values on the following list.  The
@@ -738,8 +745,11 @@ class VariablePSFBuilder(PSFBuilder):
 
     # Atmospheric PSF info:
     atmos_scheme_pref = "atmos_psf_"
+
     # Draw seeing from a distribution:
-    fwhm_arcsec = 0.05 + 0.10*np.arange(17)
+    # ESS: just use the median DES
+    fwhm_arcsec = np.array([0.9])
+
     #Old version is commented out.  We use a new version that has only 0.5-0.85
     #freq = (0., 0., 0., 7.5, 19., 20., 17., 13., 9., 5., 3.5, 2., 1., 1., 0.5, 0.0, 0.0)
     freq = (0., 0., 0., 0.0, 0.0, 20., 17., 13., 9., 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
