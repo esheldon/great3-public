@@ -30,6 +30,15 @@ import os
 import galsim
 import shutil
 
+try:
+    import astropy.io.fits as pyfits
+except:
+    try:
+        import pyfits
+    except:
+        raise ImportError("could not import pyfits or astropy.io.fits")
+
+
 # We'll read and write a lot of dictionaries below.  Several file formats are supported, and since
 # all the I/O goes through these functions, we can switch to (or add) some other format easily.
 
@@ -91,7 +100,6 @@ def readCatalog(path, fits_catalog = True):
                                    extention .p.  [Default: fits_catalog = True.]
     """
     if fits_catalog:
-        import pyfits
         return pyfits.getdata(path + ".fits")
     else:
         import cPickle
@@ -113,7 +121,6 @@ def writeCatalog(catalog, path, type = 'fits', comment_pref = '#', format = None
             if np.isnan(val) or np.isinf(val):
                 raise RuntimeError("NaN/Inf values found in catalog!")
     if type == 'fits':
-        import pyfits
         pyfits.writeto(path + ".fits", catalog, clobber = True)
     elif type == 'p':
         import cPickle
@@ -151,7 +158,6 @@ def writeCatalog(catalog, path, type = 'fits', comment_pref = '#', format = None
 def fitsToTextCatalog(path, comment_pref = '#', format = None):
     """Function to copy a catalog that already exists as FITS to a text file with the same name and
     a .txt extension."""
-    import pyfits
     cat = pyfits.getdata(path + ".fits")
     writeCatalog(cat, path, type = 'txt', comment_pref = comment_pref, format = format)
 
@@ -269,7 +275,6 @@ class Mapper(object):
         @param[out] outfile        The new file name.
         """
         import numpy
-        import pyfits
         # Read in the catalog.
         template, reader, writer = self.mappings[dataset]
         infile = os.path.join(self.full_dir, template % data_id)
@@ -311,7 +316,6 @@ class Mapper(object):
         @param[out] outfile        The new file name.
         """
         import numpy
-        import pyfits
         # read in the catalog
         template, reader, writer = self.mappings[dataset]
         infile = os.path.join(self.full_dir, template % data_id)
