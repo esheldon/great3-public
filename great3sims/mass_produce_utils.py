@@ -23,6 +23,7 @@
 # IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """Utilities needed for mass-production of sims."""
+import os
 import time
 import subprocess
 import re
@@ -60,26 +61,61 @@ def pbs_script_yaml(filename, configname, rootname):
         f.write("cd "+rootname+"\n")
         f.write("/home/rmandelb/software/bin/galsim "+configname+" -v1\n")
 
+def write_python_wq_script(filename, jobname, rootdir):
+    """A utility to write a PBS script to filename, to use the given yaml configname.
+    """
+
+    text="""
+command: |
+    source ~/.bashrc
+    source ~/shell_scripts/great3-mysim-prepare.sh
+    cd {rootdir}
+    python {jobname}.py
+
+job_name: "{jobname}"\n""".format(jobname=jobname, rootdir=rootdir)
+
+    with open(filename,'w') as fobj:
+        fobj.write(text)
+
+
+def write_galsim_wq_script(filename, configname, rootdir):
+    """A utility to write a PBS script to filename, to use the given yaml configname.
+    """
+    jobname, _ = os.path.splitext(configname)
+    jobname = 'g3_'+jobname
+
+    text="""
+command: |
+    source ~/.bashrc
+    source ~/shell_scripts/great3-mysim-prepare.sh
+    cd {rootdir}
+    galsim {configname} -v1
+
+job_name: "{jobname}"\n""".format(configname=configname, jobname=jobname, rootdir=rootdir)
+
+    with open(filename,'w') as fobj:
+        fobj.write(text)
+
+
 def python_script(filename, root, subfield_min, subfield_max, experiment, obs_type, shear_type,
-                  gal_dir, ps_dir, seed, n_config_per_branch, preload, my_step, public_dir='public'):
+                  seed, n_config_per_branch, preload, my_step, nproc=1):
     """A utility to write a python script that just imports GREAT3 and does some steps of simulation
     generation.
     """
     import os
     import numpy as np
+
+
     if my_step == 1:
         with open(filename, "w") as f:
             f.write("import sys\n")
             f.write("import shutil\n")
-            f.write("sys.path.append('/home/rmandelb/git/great3-private')\n")
+            #f.write("sys.path.append('/home/rmandelb/git/great3-private')\n")
             f.write("import great3sims\n")
             command_str = "great3sims.run('" + root + "', subfield_min=" + str(subfield_min) + \
                 ", subfield_max=" + str(subfield_max) + ", experiments=['" + experiment + \
                 "'], obs_type=['" + obs_type + "'], shear_type=['" + shear_type + \
-                "'], gal_dir='" + gal_dir + "', ps_dir='" + ps_dir + "', seed=" + str(seed) + \
-                ", public_dir='" + os.path.join(root, public_dir) + \
-                "', truth_dir='" + os.path.join(root, 'truth') + \
-                "', steps = ['metaparameters', 'catalogs'], preload=" + str(preload) + ")\n"
+                "'],  steps = ['metaparameters', 'catalogs'], preload=" + str(preload) + ")\n"
             f.write(command_str)
 
             e = experiment[0]
@@ -102,14 +138,11 @@ def python_script(filename, root, subfield_min, subfield_max, experiment, obs_ty
                 last = last_arr[i]
                 # Could put nproc setting here.  However, for now we just want to use as many 
                 # processors as we have on that node.
-                nproc = -1
                 command_str = "great3sims.run('" + root + "', subfield_min=" + str(first) + \
                     ", subfield_max=" + str(last) + ", experiments=['" + experiment + \
                     "'], obs_type=['" + obs_type + "'], shear_type=['" + shear_type + \
-                    "'], gal_dir='" + gal_dir + "', ps_dir='" + ps_dir + "', seed=" + str(seed) + \
-                    ", public_dir='" + os.path.join(root, public_dir) + \
-                    "', truth_dir='" + os.path.join(root, 'truth') + \
-                    "', steps = ['config'], nproc=" + str(nproc) + ", preload=" + str(preload) + \
+                    "'], seed=" + str(seed) + \
+                    ", steps = ['config'], nproc=" + str(nproc) + ", preload=" + str(preload) + \
                     ")\n"
                 f.write(command_str)
                 new_name = '%s_%02d.yaml'%(config_pref,i)
@@ -128,10 +161,8 @@ def python_script(filename, root, subfield_min, subfield_max, experiment, obs_ty
             command_str = "great3sims.run('" + root + "', subfield_min=" + str(subfield_min) + \
                 ", subfield_max=" + str(subfield_max) + ", experiments=['" + experiment + \
                 "'], obs_type=['" + obs_type + "'], shear_type=['" + shear_type + \
-                "'], gal_dir='" + gal_dir + "', ps_dir='" + ps_dir + "', seed=" + str(seed) + \
-                ", public_dir='" + os.path.join(root, public_dir) + \
-                "', truth_dir='" + os.path.join(root, 'truth') + \
-                "', steps = ['config'], preload=" + str(preload) + ")\n"
+                "'], seed=" + str(seed) + \
+                ", steps = ['config'], preload=" + str(preload) + ")\n"
             f.write(command_str)
             new_star_test_name = '%s.yaml'%(star_test_config_pref)
             new_star_test_config_names.append(new_star_test_name)
@@ -146,10 +177,8 @@ def python_script(filename, root, subfield_min, subfield_max, experiment, obs_ty
             command_str = "great3sims.run('" + root + "', subfield_min=" + str(subfield_min) + \
                 ", subfield_max=" + str(subfield_max) + ", experiments=['" + experiment + \
                 "'], obs_type=['" + obs_type + "'], shear_type=['" + shear_type + \
-                "'], gal_dir='" + gal_dir + "', ps_dir='" + ps_dir + "', seed=" + str(seed) + \
-                ", public_dir='" + os.path.join(root, public_dir) + \
-                "', truth_dir='" + os.path.join(root, 'truth') + \
-                "', steps = ['star_params', 'packages'], preload=" + str(preload) + ")\n"
+                "'], seed=" + str(seed) + \
+                ", steps = ['star_params', 'packages'], preload=" + str(preload) + ")\n"
             f.write(command_str)
     else:
         raise NotImplementedError
