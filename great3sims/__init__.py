@@ -22,7 +22,10 @@
 # DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
 # IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
 # OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+import os
+
 from .builder import SimBuilder
+from . import files
 
 builders = {
     "control": SimBuilder.customize("control"),
@@ -34,10 +37,7 @@ builders = {
 
 def run(root, experiments=None, obs_type=None, shear_type=None, seed=10, steps=None,
         subfield_min=0, subfield_max=(constants.n_subfields-1),
-        gal_dir='/Users/rmandelb/great3/data-23.5', ps_dir='../inputs/shear-ps/tables',
-        opt_psf_dir = '../inputs/optical-psfs',
-        atmos_ps_dir = '../inputs/atmospsf/pk_math',
-        public_dir='public', truth_dir='truth', preload=False, nproc=-1):
+        preload=False, nproc=-1):
     """Top-level driver for GREAT3 simulation code.
 
     This driver parses the input parameters to decide what work must be done.  Here are the
@@ -116,10 +116,6 @@ def run(root, experiments=None, obs_type=None, shear_type=None, seed=10, steps=N
                              variable PSF simulations.
     @param[in] atmos_ps_dir  Directory containing atmospheric power spectrum inputs based on
                              Mathematica numerical integration.
-    @param[in] public_dir    Directory into which files to be distributed publicly should be
-                             placed.
-    @param[in] truth_dir     Directory into which files to be used for metric evaluation should be
-                             placed.
     @param[in] preload       Preload the RealGalaxyCatalog images to speed up generation of large
                              numbers of real galaxies? [default=False]  Note that for parametric
                              galaxy branches, the catalog is never preloaded.
@@ -127,6 +123,12 @@ def run(root, experiments=None, obs_type=None, shear_type=None, seed=10, steps=N
                              means that GalSim will automatically decide on a value to use]
     """
     import sys
+
+    ps_dir, atmos_ps_dir, opt_psf_dir = files.get_ps_dirs()
+    gal_dir = files.get_gal_dir()
+
+    public_dir = os.path.join(root, 'public')
+    truth_dir = os.path.join(root, 'truth')
 
     # Select experiments based on keywords, or do all of them if no experiment was specified.
     if experiments is None:
