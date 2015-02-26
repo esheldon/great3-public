@@ -27,6 +27,9 @@ import galsim
 import numpy as np
 from . import constants
 
+USE_CONST_FWHM=True
+FWHM_ARCSEC_CONST=0.9
+
 def makeBuilder(obs_type, variable_psf, multiepoch, shear_type, opt_psf_dir, atmos_ps_dir):
     """Return a PSFBuilder appropriate for the given options.
 
@@ -395,7 +398,11 @@ class ConstPSFBuilder(PSFBuilder):
                 # For seeing values, check whether we need to force them to follow the distribution
                 # (because there are very few PSFs in the branch) or not.
                 if not self.force_distribution:
-                    atmos_psf_fwhm[i_epoch] = dist_deviate()
+                    if USE_CONST_FWHM:
+                        # ESS ignoring fwhm_arcsec set above, this was Rachel's recommendation
+                        atmos_psf_fwhm[i_epoch] = FWHM_ARCSEC_CONST
+                    else:
+                        atmos_psf_fwhm[i_epoch] = dist_deviate()
                 else:
                     # First check whether we're in a deep field or not.  For deep fields, we simply
                     # force something median-ish.  Otherwise, do a more complicated calculation.
@@ -403,23 +410,27 @@ class ConstPSFBuilder(PSFBuilder):
                         constants.n_subfields_per_field[self.shear_type][self.variable_psf]
                     n_shallow_fields = \
                         (constants.n_subfields - constants.n_deep_subfields) / n_subfields_per_field
-                    if field_index < n_shallow_fields:
-                        # Draw a random uniform deviate from 0-1, and choose which bin it should go
-                        # into.  Check if that bin has already been taken.  If yes, then keep doing
-                        # this until it's not taken.  If not, then take that bin (so no other field
-                        # can), and take the value of seeing corresponding to that value of the CDF.
-                        # Note, the code below will only work for single epoch sims, but we should
-                        # have taken care of that logically, above, when setting the value of
-                        # self.force_distribution.
-                        while True:
-                            test_rand = uniform_deviate()
-                            test_bin = int(test_rand/self.dpercentile)
-                            if not self.used_percentile[test_bin]: break
-                        self.used_percentile[test_bin] = True
-                        atmos_psf_fwhm[i_epoch] = dist_deviate.val(test_rand)
+
+                    if USE_CONST_FWHM:
+                        atmos_psf_fwhm[i_epoch] = FWHM_ARCSEC_CONST
                     else:
-                        test_rand = 0.4 + 0.2 * uniform_deviate()
-                        atmos_psf_fwhm[i_epoch] = dist_deviate.val(test_rand)
+                        if field_index < n_shallow_fields:
+                            # Draw a random uniform deviate from 0-1, and choose which bin it should go
+                            # into.  Check if that bin has already been taken.  If yes, then keep doing
+                            # this until it's not taken.  If not, then take that bin (so no other field
+                            # can), and take the value of seeing corresponding to that value of the CDF.
+                            # Note, the code below will only work for single epoch sims, but we should
+                            # have taken care of that logically, above, when setting the value of
+                            # self.force_distribution.
+                            while True:
+                                test_rand = uniform_deviate()
+                                test_bin = int(test_rand/self.dpercentile)
+                                if not self.used_percentile[test_bin]: break
+                            self.used_percentile[test_bin] = True
+                            atmos_psf_fwhm[i_epoch] = dist_deviate.val(test_rand)
+                        else:
+                            test_rand = 0.4 + 0.2 * uniform_deviate()
+                            atmos_psf_fwhm[i_epoch] = dist_deviate.val(test_rand)
 
                 # For other atmospheric PSF parameters, just draw at random even if there are
                 # only a few PSFs per branch.
@@ -747,8 +758,8 @@ class VariablePSFBuilder(PSFBuilder):
     atmos_scheme_pref = "atmos_psf_"
 
     # Draw seeing from a distribution:
-    # ESS: just use the median DES
-    fwhm_arcsec = np.array([0.9])
+    # ESS: below I will ignore this and just set to 0.9
+    fwhm_arcsec = 0.05 + 0.10*np.arange(17)
 
     #Old version is commented out.  We use a new version that has only 0.5-0.85
     #freq = (0., 0., 0., 7.5, 19., 20., 17., 13., 9., 5., 3.5, 2., 1., 1., 0.5, 0.0, 0.0)
@@ -892,17 +903,20 @@ class VariablePSFBuilder(PSFBuilder):
 
                 if self.obs_type == "ground":
                     # Some atmosphere parameters: PSF FWHM, P(k) numbers
-                    if i_tile == 0:
-                        test_val = dist_deviate()
-                        while test_val < self.fwhm_min or test_val > self.fwhm_max:
-                            test_val = dist_deviate()
-                        atmos_psf_fwhm[i_tile, i_epoch] = test_val
+                    if USE_CONST_FWHM:
+                        atmos_psf_fwhm[i_epoch] = FWHM_ARCSEC_CONST
                     else:
-                        test_val = gaussian_deviate()
-                        while test_val < -2. or test_val > 2.:
+                        if i_tile == 0:
+                            test_val = dist_deviate()
+                            while test_val < self.fwhm_min or test_val > self.fwhm_max:
+                                test_val = dist_deviate()
+                            atmos_psf_fwhm[i_tile, i_epoch] = test_val
+                        else:
                             test_val = gaussian_deviate()
-                        atmos_psf_fwhm[i_tile, i_epoch] = atmos_psf_fwhm[0, i_epoch] * \
-                            (1.0 + self.fwhm_scatter*test_val)
+                            while test_val < -2. or test_val > 2.:
+                                test_val = gaussian_deviate()
+                            atmos_psf_fwhm[i_tile, i_epoch] = atmos_psf_fwhm[0, i_epoch] * \
+                                (1.0 + self.fwhm_scatter*test_val)
                     atmos_psf_pk_amp[i_tile, i_epoch] = \
                         (uniform_deviate()*(self.max_A-self.min_A) + self.min_A) * (20./t_exp)
                     atmos_psf_pk_theta0[i_tile, i_epoch] = \
