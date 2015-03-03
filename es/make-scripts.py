@@ -44,12 +44,12 @@ if not os.path.exists(data_root):
     os.makedirs(data_root)
 
 # Number of config files to be run per branch.
-#n_config_per_branch = 204
-n_config_per_branch = 2
+n_config_per_branch = 204
+#n_config_per_branch = 2
 # The total number of subfields is split up into n_config_per_branch config files.
 subfield_min = 0
-#subfield_max = 204
-subfield_max = 1
+subfield_max = 204
+#subfield_max = 1
 
 seed = 13
 
