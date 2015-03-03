@@ -521,6 +521,34 @@ def metricQZ1_const_shear(g1est, g2est, g1true, g2true, cfid=1.e-4, mfid=1.e-3, 
         (c1 / cfid)**2 + (c2 / cfid)**2 + (m1 / mfid)**2 + (m2 / mfid)**2 + sigma2_min)
     return (Q, c1, m1, c2, m2, sig_c1, sig_m1, sig_c2, sig_m2)
 
+def metricQZ1_const_shear_err(g1est, g1est_err, g2est, g2est_err, g1true, g2true, cfid=1.e-4, mfid=1.e-3, sigma2_min=0.):
+    """Calculate a metric along the lines suggested by Joe Zuntz in Pittsburgh (option 1).
+
+    This is the GREAT3 constant metric as used by evaluate.q_constant().
+
+    Modified in December 2013 to add the sigma2_min damping term, based on discussions on the email
+    list thread [great3-ec 104].
+    """
+    import fitting
+
+    lf1=fitting.fit_line(g1true, g1est, yerr=g1est_err)
+    lf2=fitting.fit_line(g2true, g2est, yerr=g2est_err)
+
+    m1     = lf1.pars[0]-1
+    sig_m1 = lf1.perr[0]
+    c1     = lf1.pars[1]
+    sig_c1 = lf1.perr[1]
+
+    m2     = lf2.pars[0]-1
+    sig_m2 = lf2.perr[0]
+    c2     = lf2.pars[1]
+    sig_c2 = lf2.perr[1]
+
+    Q = 2000. / np.sqrt(
+        (c1 / cfid)**2 + (c2 / cfid)**2 + (m1 / mfid)**2 + (m2 / mfid)**2 + sigma2_min)
+    return (Q, c1, m1, c2, m2, sig_c1, sig_m1, sig_c2, sig_m2)
+
+
 def metricQZ2_const_shear(g1est, g2est, g1true, g2true, cfid=1.e-4, mfid=1.e-3):
     """Calculate a metric along the lines suggested by Joe Zuntz in Pittsburgh (option 2).
     """
