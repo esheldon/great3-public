@@ -78,7 +78,6 @@ epoch_shift_max = 1.0
 n_epochs = 6
 
 # Pixel scale, in arcsec.
-# ESS: use ~DES pixel scale 0.27
 pixel_scale = {
     "space": { # index second level of dictionary based on bool multiepoch
         True: 0.10, # not Nyquist sampled when there are multiple epochs
@@ -88,9 +87,10 @@ pixel_scale = {
     # maintain the same 2-level structure and it leaves open the
     # possibility of having different pixel scales in the two cases if
     # we decide it is necessary later on.
+    # ESS: set to something like DES pixel scale
     "ground": {
-        True: 0.27,
-        False: 0.27,
+        True: 0.26,
+        False: 0.26,
         },
     }
 
