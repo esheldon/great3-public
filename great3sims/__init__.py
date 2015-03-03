@@ -26,6 +26,7 @@ import os
 
 from .builder import SimBuilder
 from . import files
+from . import metrics
 
 builders = {
     "control": SimBuilder.customize("control"),
