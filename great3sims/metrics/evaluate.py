@@ -716,6 +716,165 @@ def get_generate_variable_truth(experiment, obs_type, storage_dir=STORAGE_DIR, t
     # Then return
     return field, theta, map_E, map_B, maperr
 
+def q_constant_err(submission_file, experiment, obs_type, storage_dir=STORAGE_DIR, truth_dir=TRUTH_DIR,
+               normalization=None, sigma2_min=None, just_q=False, cfid=CFID, mfid=MFID,
+               pretty_print=False, flip_g1=False, flip_g2=False, epsfile=None, show=False, ignore_fields=None):
+    """Calculate the Q_c for a constant shear branch submission.
+
+    @param submission_file  File containing the user submission.
+    @param experiment       Experiment for this branch, one of 'control', 'real_galaxy',
+                            'variable_psf', 'multiepoch', 'full'
+    @param obs_type         Observation type for this branch, one of 'ground' or 'space'
+    @param storage_dir      Directory from/into which to load/store rotation files
+    @param truth_dir        Root directory in which the truth information for the challenge is
+                            stored
+    @param normalization    Normalization factor for the metric (default `None` uses either
+                            `NORMALIZATION_CONSTANT_GROUND` or `NORMALIZATION_CONSTANT_SPACE`
+                            depending on `obs_type`)
+    @param sigma2_min       Damping term to put into the denominator of QZ1 metric (default `None`
+                            uses either `SIGMA2_MIN_CONSTANT_GROUND` or `SIGMA2_MIN_CONSTANT_SPACE`
+                            depending on `obs_type`)
+    @param just_q           Set `just_q = True` (default is `False`) to only return Q_c rather than
+                            the default behaviour of returning a tuple including best fitting c+,
+                            m+, cx, mx, etc.
+    @param cfid             Fiducial, target c value
+    @param mfid             Fiducial, target m value
+    @param ignore_fields    List or tuple of fields to ignore.  If None, use all fields.
+    @return The metric Q_c, & optionally best fitting c+, m+, cx, mx, sigc+, sigcm+, sigcx, sigmx.
+    """
+
+    if not os.path.isfile(submission_file):
+        raise ValueError("Supplied submission_file '"+submission_file+"' does not exist.")
+
+    # If the sigma2_min is not changed from None, set using defaults based on obs_type
+    if sigma2_min is None:
+        if obs_type == "ground":
+            sigma2_min = SIGMA2_MIN_CONSTANT_GROUND
+        elif obs_type == "space":
+            sigma2_min = SIGMA2_MIN_CONSTANT_SPACE
+        else:
+            raise ValueError("Default sigma2_min cannot be set as obs_type not recognised")
+
+    # If the normalization is not changed from None, set using defaults based on obs_type
+    if normalization is None:
+        if obs_type == "ground":
+            normalization = NORMALIZATION_CONSTANT_GROUND
+        elif obs_type == "space":
+            normalization = NORMALIZATION_CONSTANT_SPACE
+        else:
+            raise ValueError("Default sigma2_min cannot be set as obs_type not recognised")
+    # Load the submission and label the slices we're interested in
+
+    data = np.loadtxt(submission_file)
+    subfield = data[:, 0]  
+
+    g1sub     = data[:, 1]
+    g1sub_err = data[:, 2]
+    g2sub     = data[:, 3]
+    g2sub_err = data[:, 4]
+
+
+    if flip_g1: g1sub = -g1sub
+    if flip_g2: g2sub = -g2sub
+
+    rotations = get_generate_const_rotations(
+        experiment, obs_type, truth_dir=truth_dir, storage_dir=storage_dir)
+    g1srot = g1sub * np.cos(-2. * rotations) - g2sub * np.sin(-2. * rotations)
+    g2srot = g1sub * np.sin(-2. * rotations) + g2sub * np.cos(-2. * rotations)
+    # Load the truth
+    _, g1truth, g2truth = get_generate_const_truth(
+         experiment, obs_type, truth_dir=truth_dir, storage_dir=storage_dir)
+    # Rotate the truth in the same sense, then use the g3metrics.fitline routine to
+    # perform simple linear regression
+    g1trot = g1truth * np.cos(-2. * rotations) - g2truth * np.sin(-2. * rotations)
+    g2trot = g1truth * np.sin(-2. * rotations) + g2truth * np.cos(-2. * rotations)
+    # Decide which subfields to use / ignore
+    use = np.ones_like(g1srot, dtype=bool)
+    if ignore_fields is not None:
+        for field_index in ignore_fields:
+            use[field_index] = False
+
+    Q_c, c1, m1, c2, m2, sigc1, sigm1, sigc2, sigm2 = g3metrics.metricQZ1_const_shear_err(
+        g1srot[use], g1sub_err[use], g2srot[use], g2sub_err[use], g1trot[use], g2trot[use],
+        cfid=cfid, mfid=mfid, sigma2_min=sigma2_min)
+    Q_c *= normalization
+
+    if epsfile or show:
+        import biggles
+
+        width=2
+        arr=biggles.FramedArray(2,1)
+        arr.yrange=[-0.01,0.01]
+        xrng=[-0.05,0.05]
+        arr.xrange=xrng
+
+        arr.xlabel=r'$\gamma_{True}$'
+        arr.ylabel=r'$\gamma_{Meas}-\gamma_{True}$'
+
+        pts1=biggles.Points(g1trot[use], g1srot[use]-g1trot[use],
+        type='filled circle')
+        
+        x=np.linspace(g1trot[use].min(),g1trot[use].max())
+        y1=c1 + m1*x
+        fc1=biggles.Curve(x, y1, color='blue', width=width)
+
+
+        lab1=biggles.PlotLabel(0.1,0.9,r'$\gamma_1$',halign='left')
+
+        pts2=biggles.Points(g2trot[use], g2srot[use]-g2trot[use],
+        type='filled circle', color='red')
+        y2=c2 + m2*x
+        fc2=biggles.Curve(x, y2, color='blue', width=width)
+
+        lab2=biggles.PlotLabel(0.1,0.9,r'$\gamma_2$',halign='left')
+
+        z=biggles.Curve(xrng, [0,0])
+        arr[0,0].add(z, pts1, fc1, lab1)
+        arr[1,0].add(z, pts2, fc2, lab2)
+
+
+        clab1s=r'$c_+ = %.5f \pm %.5f$' % (c1,sigc1)
+        mlab1s=r'$m_+ = %.3f \pm %.3f$' % (m1,sigm1)
+        clab2s=r'$c_x = %.5f \pm %.5f$' % (c2,sigc2)
+        mlab2s=r'$m_x = %.3f \pm %.3f$' % (m2,sigm2)
+
+        mlab1=biggles.PlotLabel(0.9,0.9,mlab1s,halign='right')
+        mlab2=biggles.PlotLabel(0.9,0.9,mlab2s,halign='right')
+        clab1=biggles.PlotLabel(0.9,0.8,clab1s,halign='right')
+        clab2=biggles.PlotLabel(0.9,0.8,clab2s,halign='right')
+
+        Qlabs = r'$Q = %d$' % Q_c
+        Qlab = biggles.PlotLabel(0.9,0.1,Qlabs,halign='right')
+
+        arr[0,0].add(mlab1,clab1)
+        arr[1,0].add(mlab2,clab2,Qlab)
+
+        if epsfile is not None:
+            print 'writing',epsfile
+            arr.write_eps(epsfile)
+
+        if show:
+            arr.show()
+
+    # Then return
+    if just_q:
+        ret = Q_c
+    else:
+        if pretty_print:
+            print
+            print "Evaluated results for submission "+str(submission_file)
+            print "Using sigma2_min = "+str(sigma2_min)
+            print
+            print "Q_c =  %.4f" % Q_c
+            print "c+  = %+.5f +/- %.5f" % (c1, sigc1)
+            print "cx  = %+.5f +/- %.5f" % (c2, sigc2)
+            print "m+  = %+.5f +/- %.5f" % (m1, sigm1)
+            print "mx  = %+.5f +/- %.5f" % (m2, sigm2)
+            print
+        ret = (Q_c, c1, m1, c2, m2, sigc1, sigm1, sigc2, sigm2)
+    return ret
+
+
 def q_constant(submission_file, experiment, obs_type, storage_dir=STORAGE_DIR, truth_dir=TRUTH_DIR,
                logger=None, normalization=None, sigma2_min=None, just_q=False, cfid=CFID, mfid=MFID,
                pretty_print=False, flip_g1=False, flip_g2=False, plot=False, ignore_fields=None):
@@ -804,7 +963,7 @@ def q_constant(submission_file, experiment, obs_type, storage_dir=STORAGE_DIR, t
             plt.xlim()
             plt.xlabel("gtrue_+")
             plt.ylabel("(gsub - gtrue)_+")
-            plt.ylim(-0.015, 0.015)
+            #plt.ylim(-0.015, 0.015)
             plt.title(os.path.split(submission_file)[-1])
             plt.axhline(ls='--', color='k')
             plt.legend()
