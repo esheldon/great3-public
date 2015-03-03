@@ -921,6 +921,8 @@ class SimBuilder(object):
             stamp = galaxy_image.subImage(bbox)
             # Draw into the postage stamp.
             final.draw(stamp, normalization='f', dx=pixel_scale, offset=offset)
+            # ESS: new galsim this is default
+            #final.draw(stamp, dx=pixel_scale, offset=offset)
 
             # Apply whitening if necessary (i.e., for 'real_galaxy' and 'full' branches, which use
             # real HST images).
@@ -1054,7 +1056,9 @@ class SimBuilder(object):
             # Draw into the postage stamp, including the centroid shift with the draw() method
             # (rather than actually shifting the GSObject).  The draw() `offset` keyword takes pixel
             # units, rather than arcsec.
+            # ESS: new galsim this is default
             final.draw(stamp, normalization='f', offset=offset)
+            #final.draw(stamp, offset=offset)
             # Only the variable PSF branches have noisy star fields, so add noise in that case.
             if self.variable_psf:
                 self.noise_builder.addStarImageNoise(
