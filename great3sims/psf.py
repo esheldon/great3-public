@@ -27,8 +27,10 @@ import galsim
 import numpy as np
 from . import constants
 
+# atmospheric part of psf.  When combined with the rest
+# I get fwhm~0.9 fitting a turbulent model
 USE_CONST_FWHM=True
-FWHM_ARCSEC_CONST=0.9
+FWHM_ARCSEC_CONST=0.7
 
 def makeBuilder(obs_type, variable_psf, multiepoch, shear_type, opt_psf_dir, atmos_ps_dir):
     """Return a PSFBuilder appropriate for the given options.
@@ -154,26 +156,46 @@ class ConstPSFBuilder(PSFBuilder):
     #
     # And then for the ground, let's consider typical wavelengths between 500-900 nm, and diam
     # between 2-8m.  This gives a total range for lam/diam = 0.013 -> 0.083.
+    #min_lam_over_diam = {
+    #    "space" : 0.12, # arcsec
+    #    "ground" : 0.013, # arcsec
+    #    }
+    #max_lam_over_diam = {
+    #    "space" : 0.17, # arcsec
+    #    "ground" : 0.083,
+    #    }
+    # ESS: mike's recommendations for DES
     min_lam_over_diam = {
         "space" : 0.12, # arcsec
-        "ground" : 0.013, # arcsec
+        "ground" : 0.036, # arcsec
         }
     max_lam_over_diam = {
         "space" : 0.17, # arcsec
-        "ground" : 0.083,
+        "ground" : 0.036,
         }
+
 
     # Choose some value for obscuration by the secondary, using a uniform distribution between the
     # min/max values given here.  We use the same range for space / ground, but to enable
     # flexibility later on, this is also a dict.
+    #min_obscuration = {
+    #    "space" : 0.1,
+    #    "ground" : 0.1,
+    #    }
+    #max_obscuration = {
+    #    "space" : 0.5,
+    #    "ground" : 0.5,
+    #    }
+    # ESS: Mike's recommendations for DES
     min_obscuration = {
         "space" : 0.1,
-        "ground" : 0.1,
+        "ground" : 0.2,
         }
     max_obscuration = {
         "space" : 0.5,
-        "ground" : 0.5,
+        "ground" : 0.2,
         }
+
 
     # Aberrations for space telescopes: the baseline WFIRST2.4 PSF model (without tilt,
     # misalignment, etc.) seems to have aberrations roughly in the range [-0.01, 0.01] (per
@@ -183,10 +205,16 @@ class ConstPSFBuilder(PSFBuilder):
     # allow larger aberrations when considered in units of wavelength.
     #
     # Ground telescopes tend to have larger aberrations, so that's where the 0.41 comes from.
+    #rms_aberration = {
+    #    "space" : 0.08,
+    #    "ground" : 0.41,
+    #    }
+    # ESS: Aaron's recommendation
     rms_aberration = {
         "space" : 0.08,
-        "ground" : 0.41,
+        "ground" : 0.26,
         }
+
 
     # We have to define the set of aberrations that we'll use, and some names that will go into the
     # schema to specify them.  The purpose of setting it up this way is that if we decide we want
@@ -209,7 +237,7 @@ class ConstPSFBuilder(PSFBuilder):
     #    }
     aber_weights = {
         "space" : np.ones(n_aber),
-        "ground" : np.array((0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07, 0.07))
+        "ground" : np.array((0.13, 0.13, 0.14, 0.06, 0.06, 0.05, 0.06, 0.03))
         }
 
     opt_schema_pref = "opt_psf_"
@@ -248,6 +276,7 @@ class ConstPSFBuilder(PSFBuilder):
     #Old version is commented out.  We use a new version that has only 0.5-0.85
     #freq = (0., 0., 0., 7.5, 19., 20., 17., 13., 9., 5., 3.5, 2., 1., 1., 0.5, 0.0, 0.0)
     freq = (0., 0., 0., 0.0, 0.0, 20., 17., 13., 9., 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+
     # Later on we will draw from this distribution using:
     # dd = galsim.DistDeviate(uniform_deviate,
     #                        function=galsim.LookupTable(fwhm_arcsec, freq, interpolant='linear'))
@@ -758,7 +787,7 @@ class VariablePSFBuilder(PSFBuilder):
     atmos_scheme_pref = "atmos_psf_"
 
     # Draw seeing from a distribution:
-    # ESS: below I will ignore this and just set to 0.9
+    # ESS: below I will ignore this and just set to a constant
     fwhm_arcsec = 0.05 + 0.10*np.arange(17)
 
     #Old version is commented out.  We use a new version that has only 0.5-0.85
