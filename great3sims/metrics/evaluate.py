@@ -717,7 +717,7 @@ def get_generate_variable_truth(experiment, obs_type, storage_dir=STORAGE_DIR, t
     return field, theta, map_E, map_B, maperr
 
 def q_constant_err(submission_file, experiment, obs_type, storage_dir=STORAGE_DIR, truth_dir=TRUTH_DIR,
-               normalization=None, sigma2_min=None, just_q=False, cfid=CFID, mfid=MFID,
+               normalization=None, sigma2_min=None, cfid=CFID, mfid=MFID,
                pretty_print=False, flip_g1=False, flip_g2=False, epsfile=None, show=False, ignore_fields=None):
     """Calculate the Q_c for a constant shear branch submission.
 
@@ -734,9 +734,6 @@ def q_constant_err(submission_file, experiment, obs_type, storage_dir=STORAGE_DI
     @param sigma2_min       Damping term to put into the denominator of QZ1 metric (default `None`
                             uses either `SIGMA2_MIN_CONSTANT_GROUND` or `SIGMA2_MIN_CONSTANT_SPACE`
                             depending on `obs_type`)
-    @param just_q           Set `just_q = True` (default is `False`) to only return Q_c rather than
-                            the default behaviour of returning a tuple including best fitting c+,
-                            m+, cx, mx, etc.
     @param cfid             Fiducial, target c value
     @param mfid             Fiducial, target m value
     @param ignore_fields    List or tuple of fields to ignore.  If None, use all fields.
@@ -801,6 +798,7 @@ def q_constant_err(submission_file, experiment, obs_type, storage_dir=STORAGE_DI
 
     if epsfile or show:
         import biggles
+        biggles.configure('default','fontsize_min',2)
 
         width=2
         arr=biggles.FramedArray(2,1)
@@ -856,22 +854,29 @@ def q_constant_err(submission_file, experiment, obs_type, storage_dir=STORAGE_DI
         if show:
             arr.show()
 
+    ret={'Q': Q_c,
+         'c1':c1,
+         'c1_err':sigc1,
+         'c2':c2,
+         'c2_err':sigc2,
+         'm1':m1,
+         'm1_err':sigm1,
+         'm2':m2,
+         'm2_err':sigm2}
+
     # Then return
-    if just_q:
-        ret = Q_c
-    else:
-        if pretty_print:
-            print
-            print "Evaluated results for submission "+str(submission_file)
-            print "Using sigma2_min = "+str(sigma2_min)
-            print
-            print "Q_c =  %.4f" % Q_c
-            print "c+  = %+.5f +/- %.5f" % (c1, sigc1)
-            print "cx  = %+.5f +/- %.5f" % (c2, sigc2)
-            print "m+  = %+.5f +/- %.5f" % (m1, sigm1)
-            print "mx  = %+.5f +/- %.5f" % (m2, sigm2)
-            print
-        ret = (Q_c, c1, m1, c2, m2, sigc1, sigm1, sigc2, sigm2)
+    if pretty_print:
+        print
+        print "Evaluated results for submission "+str(submission_file)
+        print "Using sigma2_min = "+str(sigma2_min)
+        print
+        print "Q_c =  %.4f" % Q_c
+        print "c+  = %+.5f +/- %.5f" % (c1, sigc1)
+        print "cx  = %+.5f +/- %.5f" % (c2, sigc2)
+        print "m+  = %+.5f +/- %.5f" % (m1, sigm1)
+        print "mx  = %+.5f +/- %.5f" % (m2, sigm2)
+        print
+
     return ret
 
 
