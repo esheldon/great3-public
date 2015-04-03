@@ -28,6 +28,14 @@ experiment, observation, or shear type.
 """
 import numpy
 
+# ESS: the config is hardcoded in a python file.  There is also lots of
+# other configuration spread throughout the *rest* of the code as well.
+#
+# this means to make a new configuration we have to change the *code*.  Which
+# means if someone upstream makes a new run of great3 with different
+# configuration, it will *conflict* with this code!
+
+
 # Linear extent of one of our images, in degrees.
 image_size_deg = 10.
 
@@ -66,7 +74,7 @@ ny_constpsf = 3
 # Number of galaxy/shear catalogs per experiment.  This must be an integer multiple of
 # n_subfields_per_field, and should include the number of deep subfields (for which more parameters
 # are defined below).
-n_subfields = 220
+n_subfields = 260
 
 # Shift galaxy centroids by uniform random in [-, +] in PIXELS.
 centroid_shift_max = 1.0
@@ -114,14 +122,21 @@ n_subfields_per_field = {
 # (per dimension) for a subfield with respect to the overall field position.
 subfield_grid_subsampling = 7
 
+# ESS: There is both n_deep_subfields and deep_frac.  This means one has to to
+# calculate these to agree, but there is a fraction here so it is inexact.  
+
 # Parameters related to the "deep" subfields, which are always generated at the end of the branch,
 # after all the regular subfields:
 # Number of deep subfields to generate per branch (must be integer multiple of n_subfields_per_field).
-n_deep_subfields = 20
+n_deep_subfields = 60
+
+# ESS: WAT?
 # Relative size of the deep dataset compared to the regular one, when it comes to what is actually
 # distributed with the challenge.  It must be the case that deep_frac <= n_deep_subfields /
 # (n_subfields - n_deep_subfields).
-deep_frac = 0.025
+deep_frac = 0.23076923076923078
+#deep_frac = 0.025
+
 # Factor by which the noise variance should be reduced compared to that in the regular fields when
 # creating the deep fields.  This comes from the idea that the depth is supposed to differ by ~1
 # mag, which would mean increasing fluxes by 4 or keeping fluxes fixed while lowering the noise by

@@ -43,15 +43,18 @@ data_root = files.get_data_dir(run)
 if not os.path.exists(data_root):
     os.makedirs(data_root)
 
+# these have to match constants.py because somewhere an option
+# is not being passed though, ugh
 # Number of config files to be run per branch.
-n_config_per_branch = 204
+n_config_per_branch = 260
 #n_config_per_branch = 2
 # The total number of subfields is split up into n_config_per_branch config files.
 subfield_min = 0
-subfield_max = 204
+#subfield_max = 204
+subfield_max = 259
 #subfield_max = 1
 
-seed = 13
+seed = 20
 
 # amount to increment seed for each successive branch
 delta_seed = 17

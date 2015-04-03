@@ -770,7 +770,6 @@ def q_constant_err(submission_file, experiment, obs_type, storage_dir=STORAGE_DI
     g2sub     = data[:, 3]
     g2sub_err = data[:, 4]
 
-
     if flip_g1: g1sub = -g1sub
     if flip_g2: g2sub = -g2sub
 

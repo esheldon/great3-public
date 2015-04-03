@@ -448,7 +448,7 @@ class COSMOSGalaxyBuilder(GalaxyBuilder):
         # Select an index out of these, at random, and with replacement; however, need to apply
         # size-dependent weight because of failure to make postage stamps preferentially for large
         # galaxies.  Note: no weighting to account for known LSS fluctuations in COSMOS field.
-        use_indices = np.zeros(n_to_select)
+        use_indices = np.zeros(n_to_select,dtype='i8')
         for ind in range(n_to_select):
             # Select a random value in [0...len(useful_indices)-1], which tells the index in the
             # rgc.
@@ -468,7 +468,8 @@ class COSMOSGalaxyBuilder(GalaxyBuilder):
 
         # Set up arrays with indices and rotation angles to ensure shape noise cancellation.  The
         # method of doing this depends on the shear type.
-        all_indices = np.zeros(constants.nrows*constants.ncols)
+        # ESS: use integers for indices
+        all_indices = np.zeros(constants.nrows*constants.ncols,dtype='i8')
         rot_angle = np.zeros(constants.nrows*constants.ncols)
         # However, we first get some basic information about the galaxies which will be necessary
         # for tests of shape noise cancellation, whether for constant or variable shear.
@@ -480,7 +481,7 @@ class COSMOSGalaxyBuilder(GalaxyBuilder):
         # already have been excluded using flags.
         gmag = np.zeros_like(emag)
         gmag[emag<1.] = emag[emag<1.] / (1.0+np.sqrt(1.0 - emag[emag<1.]**2))
-        if self.shear_type == "constant":
+        if False and self.shear_type == "constant":
             # Make an array containing all indices (each repeated twice) but with rotation angle of
             # pi/2 for the second set.  Include a random rotation to get rid of any coherent shear
             # in the COSMOS galaxies.
@@ -497,6 +498,29 @@ class COSMOSGalaxyBuilder(GalaxyBuilder):
             perm_array = np.random.permutation(constants.nrows*constants.ncols)
             all_indices = all_indices[perm_array]
             rot_angle = rot_angle[perm_array]
+
+        elif True and self.shear_type=="constant":
+            # ESS: make sure galaxies appear together so we can properly select them
+            # as *pairs*  That way selections do not break the ring
+
+            # Make an array containing all indices (each repeated twice) but with rotation angle of
+            # pi/2 for the second set.  Include a random rotation to get rid of any coherent shear
+            # in the COSMOS galaxies.
+            all_indices[0:n_to_select] = use_indices
+            all_indices[n_to_select:constants.nrows*constants.ncols] = use_indices
+            for ind in range(0,n_to_select):
+                rot_angle[ind] = rng() * np.pi
+            rot_angle[n_to_select:constants.nrows*constants.ncols] = np.pi/2. + \
+                rot_angle[0:n_to_select]
+
+            # make sure pairs are together
+            s=all_indices.argsort()
+            all_indices=all_indices[s]
+            rot_angle=rot_angle[s]
+
+            # print out a few so we can see they are properly paired
+            print all_indices
+
         else:
             # For variable shear, it's more complicated: we need B-mode shape noise.  To generate
             # it, get the intrinsic shears from our precomputed tables.
